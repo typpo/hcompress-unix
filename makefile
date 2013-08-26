@@ -10,7 +10,8 @@
 # in Astronomy. All rights reserved. Produced under National
 # Aeronautics and Space Administration Contract No. NAS5-26555.
 #
-INSTALLDIR = ${HOME}/bin
+#INSTALLDIR = ${HOME}/bin
+INSTALLDIR = /usr/local/bin
 #
 CC=gcc
 CFLAGS = -O
