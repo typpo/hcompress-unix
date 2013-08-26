@@ -1,0 +1,525 @@
+.TH HCOMPRESS 1  "20 April 1992"
+.SH NAME
+hcompress, hdecompress, fcompress, fdecompress \- compress and decompress images
+.SH SYNOPSIS
+.HP
+.B hcomp -v -i raw\||\|net\||\|fits\||\|hhh
+.B -s
+.I scale
+.B -r
+.I rows
+.B -c
+.I columns
+.RI [\  datafile \ [\  headerfile \ ]\ ]
+.HP
+.B hdecomp -v -s -o 
+.B raw\||\|net\||\|fits\||\|hhh
+.HP
+.B hcompress -s
+.I scale
+.B -k -r
+.IR files .\|.\|.
+.RI [\  options \ ]
+.IR files .\|.\|.
+.HP
+.B fcompress -s
+.I scale
+.B -k -r
+.IR files .\|.\|.
+.RI [\  options \ ]
+.IR files .\|.\|.
+.HP
+.B hdecompress -s -u -k -r -o
+.B raw\||\|net\||\|fits\||\|hhh
+.IR files .\|.\|.
+.RI [\  options \ ]
+.IR files .\|.\|.
+.HP
+.B fdecompress -s -u -k -r -o
+.B raw\||\|net\||\|fits\||\|hhh
+.IR files .\|.\|.
+.RI [\  options \ ]
+.IR files .\|.\|.
+.SH DESCRIPTION
+.B hcompress
+is an image compression package written to compress the Space Telescope
+Science Institute (STScI) Digitized Sky Survey images.  It is
+well-suited to the compression of astronomical images, which generally
+consist of flat sky sprinkled with point sources (stars) and the
+occasional extended source (galaxies and nebulae).
+Briefly, the method used is:
+.IP (1)
+a wavelet transform called the H-transform (a Haar transform
+generalized to two dimensions), followed by
+.IP (2)
+quantization that discards noise in the image while retaining
+the signal on all scales, followed by
+.IP (3)
+quadtree coding of the quantized coefficients.
+.PP
+
+The technique gives very good compression for astronomical images and
+is fast, requiring about 4 seconds for compression or decompression of
+a 512x512 image on a Sun SPARCstation 1.  The calculations are carried
+out using integer arithmetic and are entirely reversible.
+Consequently, the program can be used for either lossy or lossless
+compression, with no special approach needed for the lossless case
+(e.g. there is no need for a file of residuals.)
+
+These programs can compress 2-byte integer images in a small variety of
+input formats.  The resulting compressed image file is machine-independent
+and may be transferred between computers with binary FTP.
+
+The executable programs
+.B hcomp
+and
+.B hdecomp
+are the basic tools for compression and decompression of images.
+Users with images in FITS format will generally find it easier to
+use the
+.B fcompress
+and
+.B fdecompress
+scripts, while users with images in the IRAF and
+STSDAS hhh/hhd file formats will prefer the
+.B hcompress
+and
+.B hdecompress
+scripts.
+(FITS is the Flexible Image Transport System, which is the universal
+standard for astronomical data.
+IRAF is a widely used astronomical data analysis system; STSDAS is
+a package of IRAF tasks designed for Hubble Space Telescope data.)
+Those who wish to use this compression software for non-astronomical
+images will probably find these scripts inadequate and are encouraged
+to create their own scripts using these as a model.  It also would be
+rather easy to modify the source code so that 8-bit images can be
+used as input.
+
+In Unix these programs and scripts can be installed in some directory
+found in your path using the
+.B make install
+command.  In VMS it is necessary to define symbols pointing to the
+directory and the programs by executing the
+.B @hcompinit
+command file.
+
+To compress a 2-byte integer image in FITS format,
+
+.RS
+.B fcompress -s
+.I scale
+image.fits
+.RE
+
+produces an output file named image.fits.H (or image.fits_H in VMS)
+with the compressed image.  The input file image.fits is not removed
+unless the
+.B -r
+option is specified.  To decompress this image,
+
+.RS
+.B fdecompress 
+image.fits.H
+.RE
+
+will create a FITS file called image.fits.
+
+The
+.B -s
+.I scale
+option determines the amount of compression.
+.I Scale
+= 0 or 1 leads to lossless compression, i.e. the decompressed
+image has exactly the same pixel values as the original image.
+If
+.I scale
+> 1 then the compression is lossy: the decompressed image will
+.I not
+be exactly the same as the original.
+For astronomical images, lossless compression is generally rather
+ineffective because the images have a good deal of noise, which is
+inherently incompressible.  However, if some of this noise is
+discarded then the images compress very well.  The
+.I scale
+factor determines how much of the noise is discarded.  We have found
+that setting
+.I scale
+to 2 times sigma, the RMS noise in the image, usually results in compression
+by about a factor of 10 (i.e. the compressed image requires about
+1.5 bits/pixel), while producing a decompressed image that is
+nearly indistinguishable from the original.  In fact, the RMS
+difference between the decompressed image and the original image
+will be only about 1/2 sigma.  Our experiments indicate that this
+level of loss has no noticeable effect on either the visual appearance
+of the image or on quantitative analysis of the image (e.g. measurements of
+positions and brightnesses of stars are not adversely affected.)
+.PP
+Using a larger value for
+.I scale
+results in higher compression at the cost of larger differences between
+the compressed and original images.  A rough rule of thumb is that if
+.I scale
+equals N sigma, then the image will compress to about 3/N bits/pixel,
+and the RMS difference between the original and the compressed image
+will be about N/4 sigma.  This crude relationship is inaccurate both
+for very high compression ratios and for lossless compression, but it
+does at least give an indication of what to expect of the compressed
+images.
+
+For images in which the noise varies from pixel to pixel (e.g. CCD
+images, where the noise is larger for brighter pixels), the appropriate
+value for
+.I scale
+is determined by the RMS noise level in the sky regions of the image.
+For images that are essentially noiseless, any lossy compression
+is noticeable under sufficiently close inspection of the image, but
+some loss is nonetheless acceptable for typical applications.  Note that
+the quantization scheme used in
+.B hcompress
+is 
+.I not
+designed to give images that appear as much like the original as possible
+to the human eye, but rather is designed to produce images that are
+as similar as possible to the original under quantitative analysis.
+Thus, our emphasis is on discarding noise without affecting the
+signal rather than on discarding components of the image that are
+not very noticeable to the eye (as may be done, for example, by JPEG
+compression.)  The resulting compression scheme is not
+ideal for typical terrestrial images (though it is still a
+reasonably good method for those images), but we believe it
+is close to optimal for astronomical images.
+
+.SH OPTIONS
+.HP
+.B hcomp -v -i 
+.B raw\||\|net\||\|fits\||\|hhh
+.B -s
+.I scale
+.B -r
+.I rows
+.B -c
+.I columns
+.RI [\  datafile \ [\  headerfile \ ]\ ]
+.PP
+.B hcomp
+reads an image from the standard input (or from
+.I datafile
+and
+.I headerfile
+if specified) and writes a compressed image to the
+standard output.
+.RS
+.TP
+.B -v
+Verbose. A description of the input file and the compression achieved is
+written to the standard error output.
+.TP
+.B -i raw\||\|net\||\|fits\||\|hhh
+Input format. Choices are:
+.RS
+.TP
+.B raw
+Pixel values have 2 bytes in machine-dependent
+order, i.e. no byte swapping is done on input.  This is
+the default format if none is specified.
+.TP
+.B net
+Pixel values have 2 bytes in "network" order:
+high byte first, then low byte for each pixel.  Byte-swapping
+is done on input if needed.  Note that this is the same as
+raw format on some machines (e.g. Suns) but is different on
+others (e.g. VAXes).  Files in net format can be transferred
+from one machine to another without modification, but files
+in raw format cannot.
+.TP
+.B fits
+FITS (Flexible Image Transport System) format image.  Header gives
+image size.  Bytes are in network order.  FITS format is the
+universal standard for transport of astronomical images.
+.TP
+.B hhh
+FITS-type header (but without padding lines making header
+multiple of 2880 bytes) in a file named
+.IR rootname.xxh ,
+with
+the pixel values (bytes in machine-dependent order) in a
+different file named
+.IR rootname.xxd .
+No byte-swapping is done on input.
+.RE
+.TP
+.BI -s\  scale
+Scale factor.  Non-negative integer that determines the amount of
+compression.  Default is
+.I scale
+= 1024, which could be wildly inappropriate for your images.  Use
+.I scale
+= 0 for lossless compression.  See the discussion above for more
+information.
+.TP
+.B -r
+Pixels/row.  This is the quickly varying dimension in the file, i.e. the
+order of pixels in the file is all pixels from first row, all pixels from
+second row, etc.  Note that the size of the image can be specified this
+way only for
+.B raw
+and
+.B net
+format images;
+.B fits
+and
+.B hhh
+format images include a header giving the size of the image.
+Default value is 256.
+.TP
+.B -c
+Pixels/column.  This is the slowly varying dimension in the file.
+Default value is 256.
+.TP
+.I datafile
+Input data file.  If not specified the input is read from stdin.
+.TP
+.I headerfile
+Input header file.  This is only specified for format
+.BR hhh ,
+in which the header and data are in separate files.  It is also
+possible to concatenate the header and data files into stdin
+for
+.B hhh
+format images.
+.RE
+.HP
+.B hdecomp -v -s -o
+.B raw\||\|net\||\|fits\||\|hhh
+.PP
+.B hdecomp
+reads a compressed image from the standard input and writes
+a decompressed image to the standard output.
+.RS
+.TP
+.B -v
+Verbose. A description of the output file is
+written to the standard error output.
+.TP
+.B -s
+Smoothing flag.  At high compressions the decompressed image
+begins to appear blocky because of the way information is
+discarded.  This blockiness is greatly reduced, producing more
+pleasing images, if the
+.B -s
+flag is specified during decompression.  Default is no smoothing.
+.TP
+.B -o raw\||\|net\||\|fits\||\|hhh
+Output format.  Default is
+.B fits
+for input files that were in FITS format and is
+.B raw
+for other input file formats.  Note that this means that an
+image that was originally in
+.B net
+format is not, by default, decompressed to the same format.
+Other input formats are properly decompressed to the
+same format on output.
+.RE
+.HP
+.B hcompress -s
+.I scale
+.B -k -r
+.IR files .\|.\|.
+.RI [\  options \ ]
+.IR files .\|.\|.
+.PP
+.B hcompress
+compresses one or more images in
+.B hhh
+input format.
+.RS
+.TP
+.BI -s\  scale
+Scale factor.  Default in script is 666.  Note that this is different
+than the default in
+.BR hcomp .
+You can modify the script to insert a typical value for your images as
+the default.
+.TP
+.B -k
+Keep original files after compression (default).
+.TP
+.B -r
+Remove original files after compression.  Only the
+data file (\*.hhd) is removed, the header file is
+retained in any case.
+.TP
+.IR files .\|.\|.
+One or more hhh/hhd format images to compress.  Wild cards may be
+used.  The names of the data files (not the header files) should be
+specified.  Note that one can mix options and file names; options
+apply only to files that follow them on the command line.  For example,
+the removal of the original images may be turned on and off using
+the
+.B -r
+and
+.B -k
+flags.
+If
+.I infile.xxd
+is the name of an original image data file, the
+resulting compressed image is in a file named
+.IB infile.xxd .H
+(or
+.IB infile.xxd _H
+in VMS.)
+.RE
+.HP
+.B fcompress -s
+.I scale
+.B -k -r
+.IR files .\|.\|.
+.RI [\  options \ ]
+.IR files .\|.\|.
+.PP
+.B fcompress
+compresses one or more images in
+.B fits
+input format.
+.RS
+.TP
+.BI -s\  scale
+Scale factor.  As for
+.BR hcompress ,
+the script default value is 666.
+.TP
+.B -k
+Keep original files after compression (default).
+.TP
+.B -r
+Remove original files after compression.
+.TP
+.IR files .\|.\|.
+One or more FITS format images to compress.
+If
+.I infile
+is the name of an input FITS file, then the
+resulting compressed
+image is in a file named
+.IB infile .H
+(or
+.IB infile _H
+in VMS.)
+.RE
+.HP
+.B hdecompress -u -s -k -r -o
+.B raw\||\|net\||\|fits\||\|hhh
+.IR files .\|.\|.
+.RI [\  options \ ]
+.IR files .\|.\|.
+.HP
+.B fdecompress -u -s -k -r -o
+.B raw\||\|net\||\|fits\||\|hhh
+.IR files .\|.\|.
+.RI [\  options \ ]
+.IR files .\|.\|.
+.PP
+These programs decompress one or more compressed image
+files.
+.B hdecompress
+and
+.B fdecompress
+are actually the same program; the two different names are provided
+for consistency with the two compression programs,
+.B hcompress
+and
+.BR fcompress .
+.RS
+.TP
+.B -u
+Disable smoothing (default).
+.TP
+.B -s
+Enable smoothing.
+.TP
+.B -k
+Keep compressed image file after decompression (default).
+.TP
+.B -r
+Remove compressed image file after decompression.
+.TP
+.B -o raw\||\|net\||\|fits\||\|hhh
+Output format.  Default is
+.B fits
+for files originally in FITS
+format, and
+.B raw
+for other files.  Note that
+.B raw
+format output is correct for
+.B hhh
+format data files.
+.TP
+.IR files .\|.\|.
+Names of files to decompress.  The
+.B .H
+extension is added to the end of the filename if it is
+not explicitly specified.  (In VMS the filenames must
+already have
+.B _H
+on the end of the file extension.)
+For an input compressed image in
+.IB infile .H
+(or
+.IB infile _H
+in VMS)
+the output decompressed image is in
+.IR infile .
+.RE
+.SH BUGS
+Current input formats include only 16 bit, 2-dimensional images,
+though the extension to other formats and to higher dimensions
+would be straightforward.
+.PP
+FITS extensions such as multiple groups and group parameters are
+not accepted.
+.PP
+FITS header lines are not compressed when they are included in the
+compressed image file.  This can significantly affect the compression
+achieved for small images with large headers.  It does have the
+advantage that the header can be easily examined to determined the
+contents of the file.
+.PP
+If a highly inappropriate value is specified for the scale factor, the
+image is vastly overcompressed and much information is lost.  The
+compression program ought to estimate the range of plausible scale
+factors from the image statistics and issue a warning of the
+user-supplied value does not appear reasonable.  It would also be
+useful to have the program make a good guess for the scale factor
+if it is not specified.
+.PP
+If the wrong size is given (using the
+.B -r
+and 
+.B -c
+parameters) for a
+.B raw
+or
+.B net
+format image, the compression program may fail to read the entire image.
+No error message is issued if the image is actually bigger than the
+specified size.
+.PP
+On VAXes running VMS, the decompressed image file may not have
+the same record format as the original image.  This can cause
+problems if the software reading the image requires it to have
+special characteristics (e.g. fixed record lengths.)  The
+.B modify
+program, included with the VMS command files, can be used to
+change the decompressed image files so that they have fixed record
+lengths, but it uses an unsupported VMS system routine, SYS$MODIFY,
+to make the modification so it is at best a makeshift solution.
+.SH AUTHOR
+Richard L. White, Space Telescope Science Institute
+Copyright (c) 1993 Association of Universities for Research
+in Astronomy. All rights reserved. Produced under National
+Aeronautics and Space Administration Contract No. NAS5-26555.
+.PP
+Problems, suggestions, gripes, and praise to rlw@stsci.edu

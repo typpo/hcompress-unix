@@ -1,0 +1,46 @@
+        Installation instructions for HCOMPRESS on Unix machines
+                    R. L. White, 20 April 1992
+
+This directory contains a makefile for building HCOMPRESS on a Unix
+machine and some C-shell scripts to make using the programs a little
+easier.  This makefile has only been tested on Suns and DECStations, so
+some small modifications may be required for other machines.
+
+Steps for installation:
+
+(1) Copy the contents the contents of this directory into the
+    source directory.
+(2) Do "make all" (or just "make") to compile and link the programs.
+(3) Edit makefile: change the INSTALLDIR variable to point to the
+    directory where you want the executables to reside.  By default
+    they will go into ${HOME}/bin, i.e. your bin directory.  You should
+    chose a directory that is included in your path.
+(4) Do "make install" to install the programs in your chosen directory.
+(5) Do "rehash" to update your hash tables.
+(6) There is a man page in the file hcompress.1.  It can be installed
+    in your man directory.  The doc directory includes both a plain text
+    version of the man page (hcompress.txt) and a postscript version
+    (hcompress.ps).
+
+Now the programs should be ready to run.  You may want to customize
+the shell scripts for your applications.  Some possible changes to
+consider:
+
+(1) There are shell scripts to compress multiple files in FITS format
+    and in hhh/hhd format.  If you usually use some other formats you
+    could include in the script a conversion from your format to
+    one of the accepted formats.
+(2) The amount of compression is determined by the scale factor, set by
+    the -s option in the programs.  For astronomical images the compression
+    is generally limited by the amount of noise in the images and the
+    scale factor should be about 2 times the RMS noise in the image.
+    For noiseless images any non-zero scale factor will give up some
+    information, so the choice of scale factor will be determined by how
+    much you are willing to lose.  A default scale factor of 666 is used
+    in the scripts -- this should probably be changed to a value appropriate
+    for your typical images.  If you like, you could set this default to 0
+    (lossless compression.)
+
+Copyright (c) 1993 Association of Universities for Research
+in Astronomy. All rights reserved. Produced under National
+Aeronautics and Space Administration Contract No. NAS5-26555.
